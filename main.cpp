@@ -25,7 +25,7 @@ std::vector<std::string> get_all_targets()
       if (fs::is_directory(p)) {
         directories.push_back(p.path().string());
       }
-      all_files.push_back(p.path().string());
+      all_files.push_back(p.path().string() + "\n");
     }
 
     i++;
@@ -37,6 +37,14 @@ std::vector<std::string> get_all_targets()
 int main()
 {
   std::vector<std::string> all_targets = get_all_targets();
-  for (const auto &c: all_targets)
-    std::cout << c << '\n';
+  initscr();
+  printw("hello world\n");
+  for (const auto &c: all_targets) {
+    printw(c.c_str());
+  }
+
+  refresh();
+  getch();
+  endwin();
+  return 0;
 }
