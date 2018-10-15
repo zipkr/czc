@@ -3,10 +3,16 @@
 #include <filesystem>
 #include <vector>
 #include <map>
+#include <curses.h>
 #include <bits/stdc++.h>
 
 using namespace std;
 namespace fs = filesystem;
+
+void println(string out) {
+  printw(out.c_str());
+  printw("\n");
+}
 
 vector<string> get_all_targets()
 {
@@ -66,47 +72,87 @@ int find_edit_distance(string str1, string str2, int m, int n)
 
 int main()
 {
+  initscr();
+  noecho();
+  keypad(stdscr, TRUE);
+  scrollok(stdscr, TRUE);
+
   vector<string> all_targets = get_all_targets();
   for (const auto &c: all_targets) {
-    cout << c << "\n";
+    println(c);
   }
 
   map<string, int> target_map;
   for (const auto &c: all_targets) {
-    cout << c<< "\n";
     target_map.insert(pair<string, int>(c, 0));
   }
-
-  string input;
-  string buffer = "";
+  
   vector<pair<string, int>> sorted_pairs;
 
-  while (input != ":q") {
-    sorted_pairs.clear();
-    input = "";
+  char input;
+  string buffer = "";
+  string search_buffer = "";
+  bool is_input_mode = false;
+  int x = 0;
+  int y = 0;
+  while (input = getch()) {
+    if (input == '\n' && buffer == ":q") {
+      return 0;
+    }
 
-    cout << "Input query\n";
-    cin >> input;
+    if (input == 27) {
+      search_buffer = "";
+      buffer = "";
+      is_input_mode = false;
+      println(buffer);
+      continue;
+    }
 
-    // remove spaces
-    string::iterator delete_spaces = remove(input.begin(), input.end(), ' ');
-    input.erase(delete_spaces, input.end());
+    buffer += input;
+
+    if (is_input_mode) {
+      search_buffer += input;
+    }
+
+    if (buffer == "i") {
+      buffer = "";
+      search_buffer = "";
+      is_input_mode = true;
+      continue;
+    }
+
+    if (!is_input_mode) {
+      if (input == 'k') {
+        y++;
+        move(y, 0);
+      }
+    }
+
+
+    sorted_pairs = {};
+
+    for (const auto &[key, value]: target_map)
+    {
+      sorted_pairs.push_back(pair<string,int>(key, value));
+    }
+
+    sort(sorted_pairs.begin(), sorted_pairs.end(), [](auto &left, auto &right) {
+      return left.second > right.second;
+    });
+
+    for (const auto &c: sorted_pairs)
+    {
+      println(c.first);
+    }
 
     for (const auto &c: target_map) {
-      int edit_distance = find_edit_distance(input, c.first, input.length(), c.first.length());
+      int edit_distance = find_edit_distance(search_buffer, c.first, search_buffer.length(), c.first.length());
       target_map[c.first] = edit_distance;
     }
 
-    // sort map by value
-    copy(target_map.begin(), target_map.end(), back_inserter(sorted_pairs)) ;
-
-    sort(sorted_pairs.begin(), sorted_pairs.end(), [](auto &left, auto &right) {
-    	return left.second > right.second;
-		});
-
-    for (const auto &c: sorted_pairs) {
-      cout << "edit distance from " << input << " to " << c.first << ": " << c.second << "\n";
-    }
+    println("sb: " + search_buffer);
+    println("b: " + buffer);
+    refresh();
   }
   return 0;
 }
