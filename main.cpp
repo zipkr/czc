@@ -82,8 +82,22 @@ int main()
 
     buffer += input;
 
-    if (is_input_mode) {
-      search_buffer += input;
+    if (is_input_mode)
+    {
+      if (input == 127)
+      {
+        string new_buffer = search_buffer.substr(0, search_buffer.size() - 1);
+        search_buffer = new_buffer;
+      }
+      else if (input == '\n')
+      {
+        is_input_mode = false; 
+        continue;
+      }
+      else
+      {
+        search_buffer += input;
+      }
     }
 
     if (buffer == "i") {
