@@ -5,70 +5,38 @@
 #include <map>
 #include <curses.h>
 #include <bits/stdc++.h>
+#include "utils.h"
 
 using namespace std;
 namespace fs = filesystem;
 
-void println(string out) {
-  printw(out.c_str());
-  printw("\n");
-}
+string EXIT_BUFFER = ":q";
+int ESC_KEY = 27;
 
-vector<string> get_all_targets()
+vector<pair<string, int>> recompute_targets(string search_buffer, map<string, int> target_map)
 {
-  string current_path = fs::current_path().string();
-  vector<string> directories;
-  vector<string> all_files;
-  
-  // Initialize to current path
-  directories.push_back(current_path);
+  vector<pair<string, int>> sorted_pairs;
 
-  int i = 0;
-  while (i < directories.size())
+  // assign edit distances
+  for (const auto &c: target_map)
   {
-    current_path = directories.at(i);
-    for (const auto & p : fs::directory_iterator(current_path))
-    {
-      if (fs::is_directory(p))
-      {
-        directories.push_back(p.path().string());
-      }
-      all_files.push_back(p.path().string());
-    }
-    i++;
+    int edit_distance = find_edit_distance(search_buffer, c.first, search_buffer.length(), c.first.length());
+    target_map[c.first] = edit_distance;
   }
 
-  return all_files;
-}
+  // add elements to list
+  for (const auto &[key, value]: target_map)
+  {
+    sorted_pairs.push_back(pair<string,int>(key, value));
+  }
 
-int min(int x, int y, int z) 
-{ 
-    return min(min(x, y), z); 
-}
+  // sort the array
+  sort(sorted_pairs.begin(), sorted_pairs.end(), [](auto &left, auto &right) {
+    return left.second > right.second;
+  });
 
-int find_edit_distance(string str1, string str2, int m, int n) 
-{ 
-    int dp[m+1][n+1]; 
-    for (int i=0; i<=m; i++) 
-    { 
-        for (int j=0; j<=n; j++) 
-        { 
-            if (i==0) 
-                dp[i][j] = j;
-  
-            else if (j==0) 
-                dp[i][j] = i;
-  
-            else if (str1[i-1] == str2[j-1]) 
-                dp[i][j] = dp[i-1][j-1]; 
-  
-            else
-                dp[i][j] = 1 + min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]);
-        } 
-    } 
-  
-    return dp[m][n]; 
-} 
+  return sorted_pairs; 
+}
 
 int main()
 {
@@ -77,30 +45,34 @@ int main()
   keypad(stdscr, TRUE);
   scrollok(stdscr, TRUE);
 
+  // get all targets, and insert into ordering map
   vector<string> all_targets = get_all_targets();
-  for (const auto &c: all_targets) {
-    println(c);
-  }
-
   map<string, int> target_map;
   for (const auto &c: all_targets) {
     target_map.insert(pair<string, int>(c, 0));
   }
-  
-  vector<pair<string, int>> sorted_pairs;
 
-  char input;
+  // initialize main loop variables
+  bool is_input_mode = false;
   string buffer = "";
   string search_buffer = "";
-  bool is_input_mode = false;
-  int x = 0;
-  int y = 0;
+  vector<pair<string, int>> sorted_pairs = recompute_targets(search_buffer, target_map);
+  int y = sorted_pairs.size() - 1;
+
+  // print first screen
+  for (const auto &c: sorted_pairs)
+  {
+    println(c.first);
+  }
+
+  char input;
   while (input = getch()) {
-    if (input == '\n' && buffer == ":q") {
+    // if input == enter and buffer is exit_buffer exit program
+    if (input == '\n' && buffer == EXIT_BUFFER) {
       return 0;
     }
 
-    if (input == 27) {
+    if (input == ESC_KEY) {
       search_buffer = "";
       buffer = "";
       is_input_mode = false;
@@ -121,35 +93,42 @@ int main()
       continue;
     }
 
-    if (!is_input_mode) {
-      if (input == 'k') {
-        y++;
-        move(y, 0);
+    if (!is_input_mode)
+    {
+      if (input == 'k')
+      {
+        if (y > 0)
+        {
+          y--;
+        }
+      } 
+      else if (input == 'j')
+      {
+        if (y < sorted_pairs.size() - 1)
+        {
+          y++;
+        }
+      }
+      else if (input == '\n')
+      {
+        string vim_cmd = "$EDITOR ";
+        string cmd = vim_cmd + sorted_pairs.at(y).first;
+        system(cmd.c_str());
+        return 0;
       }
     }
 
-
-    sorted_pairs = {};
-
-    for (const auto &[key, value]: target_map)
-    {
-      sorted_pairs.push_back(pair<string,int>(key, value));
-    }
-
-    sort(sorted_pairs.begin(), sorted_pairs.end(), [](auto &left, auto &right) {
-      return left.second > right.second;
-    });
-
+    sorted_pairs = recompute_targets(search_buffer, target_map);
+    int i = 0;
     for (const auto &c: sorted_pairs)
     {
-      println(c.first);
+      if (i == y) {
+        println(c.first + "<<<<< targeted");
+      } else {
+        println(c.first);
+      }
+      i++;
     }
-
-    for (const auto &c: target_map) {
-      int edit_distance = find_edit_distance(search_buffer, c.first, search_buffer.length(), c.first.length());
-      target_map[c.first] = edit_distance;
-    }
-
     println("sb: " + search_buffer);
     println("b: " + buffer);
     refresh();

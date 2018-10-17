@@ -15,3 +15,13 @@ This is ideal for a few reasons. A fzf like binary examines the 5 most important
 5. Can I get paid doing this?
 
 For comments, suggestions, and regular updates drop me a message at zipkr@gmail.com
+
+## Installation
+
+
+simply run the following commands
+
+
+`make`
+`czc`
+
