@@ -23,5 +23,6 @@ simply run the following commands
 
 
 `make`
-`czc`
+
+`./czc`
 
