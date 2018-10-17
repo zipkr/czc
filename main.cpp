@@ -76,7 +76,6 @@ int main()
       search_buffer = "";
       buffer = "";
       is_input_mode = false;
-      println(buffer);
       continue;
     }
 
@@ -143,8 +142,15 @@ int main()
       }
       i++;
     }
+    if (is_input_mode)
+    {
+      println("====INPUT_MODE=========================================");
+    }
+    else
+    {
+      println("====NORMAL_MODE=========================================");
+    }
     println("sb: " + search_buffer);
-    println("b: " + buffer);
     refresh();
   }
   return 0;
